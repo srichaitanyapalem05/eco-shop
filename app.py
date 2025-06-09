@@ -1,76 +1,143 @@
 import streamlit as st
 
-# Sample products data: name, price, eco-friendly?
 PRODUCTS = [
-    {"name": "Organic Cotton Shirt", "price": 25, "eco": True},
-    {"name": "Plastic Bottle", "price": 5, "eco": False},
-    {"name": "Bamboo Toothbrush", "price": 3, "eco": True},
-    {"name": "Leather Wallet", "price": 45, "eco": False},
-    {"name": "Reusable Shopping Bag", "price": 2, "eco": True},
+    {
+        "name": "Shampoo Bottle",
+        "price": 18.49,
+        "eco": False,
+        "emoji": "🧴",
+        "alt": {"name": "Flutter Refill Shampoo", "price": 15.97},
+    },
+    {
+        "name": "All-Purpose Cleaner",
+        "price": 4.29,
+        "eco": True,
+        "emoji": "🧼",
+        "alt": None,
+    },
+    {
+        "name": "Plastic Water Bottle",
+        "price": 2.49,
+        "eco": False,
+        "emoji": "🥤",
+        "alt": {"name": "Reusable Steel Bottle", "price": 12.99},
+    },
+    {
+        "name": "Bamboo Toothbrush",
+        "price": 3.99,
+        "eco": True,
+        "emoji": "🎋",
+        "alt": None,
+    },
+    {
+        "name": "Leather Wallet",
+        "price": 39.99,
+        "eco": False,
+        "emoji": "👛",
+        "alt": {"name": "Cork Wallet", "price": 29.99},
+    },
+    {
+        "name": "Organic Cotton Shirt",
+        "price": 25.00,
+        "eco": True,
+        "emoji": "👕",
+        "alt": None,
+    },
+    {
+        "name": "Plastic Bag Pack",
+        "price": 1.99,
+        "eco": False,
+        "emoji": "🛍️",
+        "alt": {"name": "Reusable Tote Bag", "price": 3.49},
+    },
+    {
+        "name": "Refillable Soap Pouch",
+        "price": 6.50,
+        "eco": True,
+        "emoji": "🧴",
+        "alt": None,
+    },
+    {
+        "name": "Paper Towels",
+        "price": 3.75,
+        "eco": False,
+        "emoji": "🧻",
+        "alt": {"name": "Reusable Cloth Towels", "price": 8.50},
+    },
+    {
+        "name": "LED Light Bulb",
+        "price": 5.25,
+        "eco": True,
+        "emoji": "💡",
+        "alt": None,
+    },
 ]
 
-# Initialize cart in session state
 if "cart" not in st.session_state:
     st.session_state.cart = {}
 
-def add_to_cart(product_name):
-    if product_name in st.session_state.cart:
-        st.session_state.cart[product_name] += 1
-    else:
-        st.session_state.cart[product_name] = 1
-
-def remove_from_cart(product_name):
-    if product_name in st.session_state.cart:
-        if st.session_state.cart[product_name] > 1:
-            st.session_state.cart[product_name] -= 1
-        else:
-            del st.session_state.cart[product_name]
-
-def calculate_total():
-    total = 0
-    for item, qty in st.session_state.cart.items():
-        price = next(p["price"] for p in PRODUCTS if p["name"] == item)
-        total += price * qty
-    return total
+def add_to_cart(name):
+    st.session_state.cart[name] = st.session_state.cart.get(name, 0) + 1
 
 def calculate_ecopoints():
     points = 0
-    for item, qty in st.session_state.cart.items():
-        eco = next(p["eco"] for p in PRODUCTS if p["name"] == item)
-        if eco:
-            points += 10 * qty  # 10 eco points per eco-friendly item
+    for name, qty in st.session_state.cart.items():
+        product = next(p for p in PRODUCTS if p["name"] == name)
+        if product["eco"]:
+            points += qty * 10
     return points
 
-st.title("🌿 Eco-Friendly Shop Demo")
+def sustainability_score():
+    total = 0
+    eco_count = 0
+    for name, qty in st.session_state.cart.items():
+        p = next(p for p in PRODUCTS if p["name"] == name)
+        total += qty
+        if p["eco"]:
+            eco_count += qty
+    return round((eco_count / total) * 100) if total > 0 else 0
 
-st.header("Available Products")
-cols = st.columns(len(PRODUCTS))
-for idx, product in enumerate(PRODUCTS):
-    with cols[idx]:
-        st.write(f"**{product['name']}**")
-        st.write(f"Price: ${product['price']}")
-        st.write("🌱 Eco-friendly" if product['eco'] else "❌ Not eco-friendly")
-        if st.button(f"Add to Cart", key=f"add_{idx}"):
-            add_to_cart(product['name'])
+# UI
+st.set_page_config(page_title="EcoCart+", page_icon="🛒", layout="centered")
+st.markdown("## 🛍️ EcoCart+")
 
-st.header("Your Cart")
-if not st.session_state.cart:
-    st.write("Cart is empty.")
-else:
-    for item, qty in st.session_state.cart.items():
-        st.write(f"{item} x {qty}  ", end="")
-        if st.button(f"➖ Remove one", key=f"remove_{item}"):
-            remove_from_cart(item)
+# Score
+score = sustainability_score()
+st.markdown(f"### ♻️ Sustainability Score: **{score} / 100**")
 
-total_price = calculate_total()
-st.write(f"**Total Price:** ${total_price}")
+# Suggestions
+for name, qty in st.session_state.cart.items():
+    product = next(p for p in PRODUCTS if p["name"] == name)
+    if not product["eco"] and product["alt"]:
+        alt = product["alt"]
+        st.markdown("---")
+        st.markdown("#### 🌱 Try this eco-friendlier alternative:")
+        st.image("https://via.placeholder.com/80", width=80)  # Placeholder image
+        st.write(f"**{alt['name']}** - ${alt['price']}")
+        if st.button(f"Swap for {alt['name']}", key=f"swap_{name}"):
+            del st.session_state.cart[name]
+            add_to_cart(alt["name"])
+
+# Cart
+st.markdown("---")
+st.markdown("### 🧾 Your Cart")
+total = 0
+for product in PRODUCTS:
+    name = product["name"]
+    qty = st.session_state.cart.get(name, 0)
+    if qty > 0:
+        st.write(f"{product['emoji']} **{name}** x{qty} — ${product['price']*qty:.2f}")
+        total += product["price"] * qty
 
 ecopoints = calculate_ecopoints()
-st.write(f"🌟 **EcoPoints Earned:** {ecopoints}")
+st.markdown("---")
+st.markdown(f"✅ You have **{ecopoints} EcoPoints**")
+st.markdown(f"### 💳 Total: **${total:.2f}**")
+st.button("🛒 Checkout")
 
-st.header("Suggestions for You")
-# Suggest products not in cart
-suggestions = [p for p in PRODUCTS if p["name"] not in st.session_state.cart]
-for s in suggestions:
-    st.write(f"- {s['name']} (${s['price']}) {'🌱' if s['eco'] else ''}")
-
+# Add products
+st.markdown("---")
+st.markdown("### ➕ Add More Products")
+for product in PRODUCTS:
+    if st.button(f"Add {product['emoji']} {product['name']}", key=product["name"]):
+        add_to_cart(product["name"])
